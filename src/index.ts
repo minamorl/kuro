@@ -4,7 +4,6 @@ import readline from "readline";
 
 const filename = "data.json";
 
-
 interface IOptionDefinition {
   name: string,
   alias: string,
@@ -14,6 +13,12 @@ interface IOptionDefinition {
 interface IOptions {
   register?: string;
   delete?: string;
+};
+
+interface IVocabularyData {
+  label: string;
+  numCorrectAnswers: number;
+  numIncorrectAnswers: number;
 };
 
 const optionDefinitions: IOptionDefinition[] = [
@@ -33,16 +38,23 @@ const q = (msg: string) => new Promise(resolve => {
 });
 
 const initializeDatabase = () => fs.writeFileSync(filename, JSON.stringify([]));
-const optimisticParse = (data: string) => data ? JSON.parse(data) as string[] : [];
+const optimisticParse = (data?: Buffer) =>
+  data? JSON.parse(data.toString()) as IVocabularyData[] : [];
 
 const registerView = (options: IOptions) => {
   fs.readFile(filename, (err, data) => {
     if (err) {
       initializeDatabase();
     }
-    const words = optimisticParse(data.toString());
+    const words = optimisticParse(data);
     const word = options["register"]!;
-    if (!words.includes(word)) words.push(word);
+    if (words.findIndex(w => w.label === word)) {
+      words.push({
+        label: word,
+        numCorrectAnswers: 0,
+        numIncorrectAnswers: 0
+      });
+    }
     fs.writeFileSync(filename, JSON.stringify(words));
   })
 };
@@ -52,9 +64,9 @@ const deleteView = (options: IOptions) => {
     if (err) {
       initializeDatabase();
     }
-    const words = optimisticParse(data.toString());
+    const words = optimisticParse(data);
     const word = options["delete"]!;
-    const index = words.findIndex(w => w === word);
+    const index = words.findIndex(w => w.label === word);
     if (index >= 0) words.splice(index, 1);
     fs.writeFileSync(filename, JSON.stringify(words));
   })
@@ -65,9 +77,9 @@ const quizView = () => {
     if (err) {
       initializeDatabase();
     }
-    const words = optimisticParse(data.toString());
+    const words = optimisticParse(data);
     const promises = words.map(word =>
-      () => q("Do you know the word \"" + word + "\"?[y/n]: ")
+      () => q("Do you know the word \"" + word.label + "\"?[y/n]: ")
     );
     (async () => {
       for (let p of promises) {
