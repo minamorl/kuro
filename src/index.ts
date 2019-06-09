@@ -11,12 +11,14 @@ interface IOptionDefinition {
   type: any
 };
 
-interface IRegisterAction {
-  register: string;
+interface IOptions {
+  register?: string;
+  delete?: string;
 };
 
 const optionDefinitions: IOptionDefinition[] = [
-  { name: "register", alias: "r", type: String }
+  { name: "register", alias: "r", type: String },
+  { name: "delete", alias: "d", type: String }
 ];
 
 const q = (msg: string) => new Promise(resolve => {
@@ -33,14 +35,27 @@ const q = (msg: string) => new Promise(resolve => {
 const initializeDatabase = () => fs.writeFileSync(filename, JSON.stringify([]));
 const optimisticParse = (data: string) => data ? JSON.parse(data) as string[] : [];
 
-const registerView = (options: IRegisterAction) => {
+const registerView = (options: IOptions) => {
   fs.readFile(filename, (err, data) => {
     if (err) {
       initializeDatabase();
     }
     const words = optimisticParse(data.toString());
-    const word = options["register"];
+    const word = options["register"]!;
     if (!words.includes(word)) words.push(word);
+    fs.writeFileSync(filename, JSON.stringify(words));
+  })
+};
+
+const deleteView = (options: IOptions) => {
+  fs.readFile(filename, (err, data) => {
+    if (err) {
+      initializeDatabase();
+    }
+    const words = optimisticParse(data.toString());
+    const word = options["delete"]!;
+    const index = words.findIndex(w => w === word);
+    if (index >= 0) words.splice(index, 1);
     fs.writeFileSync(filename, JSON.stringify(words));
   })
 };
@@ -68,9 +83,12 @@ const quizView = () => {
 };
 
 const main = () => {
-  const options = commandLineArgs(optionDefinitions);
+  const options = commandLineArgs(optionDefinitions) as IOptions;
   if ('register' in options) {
-    registerView(options as IRegisterAction);
+    registerView(options);
+  }
+  if ('delete' in options) {
+    deleteView(options);
   }
   if (Object.keys(options).length === 0) {
     quizView();
