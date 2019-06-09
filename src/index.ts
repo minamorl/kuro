@@ -41,10 +41,44 @@ const initializeDatabase = () => fs.writeFileSync(filename, JSON.stringify([]));
 const optimisticParse = (data?: Buffer) =>
   data? JSON.parse(data.toString()) as IVocabularyData[] : [];
 
+const MAXIMUM_FREQUENCY = 50;
+
+type CompareFunction = (a: IVocabularyData, b: IVocabularyData) => number;
+const defaultCompareFn: CompareFunction = (a, b) => {
+  const totalNumA = a.numCorrectAnswers + a.numIncorrectAnswers;
+  const totalNumB = b.numCorrectAnswers + b.numIncorrectAnswers;
+  
+  if (totalNumA === 0 || totalNumB === 0) {
+    if (totalNumA > totalNumB) {
+      return 1;
+    } else if (totalNumA < totalNumB) {
+      return -1;
+    } else {
+      return 0;
+    }
+  }
+  
+  const rateA = a.numCorrectAnswers / totalNumA;
+  const rateB = b.numCorrectAnswers / totalNumB;
+  if (rateA > rateB) {
+    return 1;
+  } else if (rateA < rateB) {
+    return -1;
+  } else {
+    return 0;
+  }
+}
 class VocaburaryDataset {
   dataset: IVocabularyData[] = []
   constructor(dataset: IVocabularyData[]) {
     this.dataset = dataset;
+  }
+  pick(n: number, compareFn?: CompareFunction) {
+    if (compareFn) {
+      this.dataset.sort(compareFn);
+    }
+    const picked = this.dataset.slice(0, n);
+    return picked.filter(d => d.numCorrectAnswers + d.numIncorrectAnswers < MAXIMUM_FREQUENCY);
   }
   insertOrUpdate(w: IVocabularyData) {
     const index = this.dataset.findIndex(x => x.label === w.label);
@@ -100,7 +134,7 @@ const quizView = () => {
       initializeDatabase();
     }
     const dataset = VocaburaryDataset.fromBuffer(data);
-    const promises = dataset.dataset.map(word =>
+    const promises = dataset.pick(10, defaultCompareFn).map(word =>
       () => 
         [word, q("Do you know the word \"" + word.label + "\"?[y/n]: ")] as [IVocabularyData, Promise<string>]
     );
