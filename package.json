@@ -1,0 +1,20 @@
+{
+  "name": "kuro",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "minamorl",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/command-line-args": "^5.0.0",
+    "@types/node": "^12.0.7",
+    "typescript": "^3.6.0-dev.20190608"
+  },
+  "dependencies": {
+    "command-line-args": "^5.1.1"
+  }
+}
