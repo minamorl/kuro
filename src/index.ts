@@ -26,7 +26,7 @@ const optionDefinitions: IOptionDefinition[] = [
   { name: "delete", alias: "d", type: String }
 ];
 
-const q = (msg: string) => new Promise(resolve => {
+const q = (msg: string) => new Promise<string>(resolve => {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -41,21 +41,44 @@ const initializeDatabase = () => fs.writeFileSync(filename, JSON.stringify([]));
 const optimisticParse = (data?: Buffer) =>
   data? JSON.parse(data.toString()) as IVocabularyData[] : [];
 
+class VocaburaryDataset {
+  dataset: IVocabularyData[] = []
+  constructor(dataset: IVocabularyData[]) {
+    this.dataset = dataset;
+  }
+  insertOrUpdate(w: IVocabularyData) {
+    const index = this.dataset.findIndex(x => x.label === w.label);
+    if (index > -1) {
+      this.dataset[index] = w;
+    } else {
+      this.dataset.push(w);
+    }
+  }
+  remove(label: string) {
+    const index = this.dataset.findIndex(w => w.label === label);
+    if (index >= 0) this.dataset.splice(index, 1);
+  }
+  toJSON() {
+    return JSON.stringify(this.dataset);
+  }
+  static fromBuffer(buf: Buffer) {
+    return new VocaburaryDataset(optimisticParse(buf));
+  }
+}
+
 const registerView = (options: IOptions) => {
   fs.readFile(filename, (err, data) => {
     if (err) {
       initializeDatabase();
     }
-    const words = optimisticParse(data);
+    const dataset = VocaburaryDataset.fromBuffer(data);
     const word = options["register"]!;
-    if (words.findIndex(w => w.label === word)) {
-      words.push({
-        label: word,
-        numCorrectAnswers: 0,
-        numIncorrectAnswers: 0
-      });
-    }
-    fs.writeFileSync(filename, JSON.stringify(words));
+    dataset.insertOrUpdate({
+      label: word,
+      numCorrectAnswers: 0,
+      numIncorrectAnswers: 0
+    });
+    fs.writeFileSync(filename, dataset.toJSON());
   })
 };
 
@@ -64,11 +87,10 @@ const deleteView = (options: IOptions) => {
     if (err) {
       initializeDatabase();
     }
-    const words = optimisticParse(data);
-    const word = options["delete"]!;
-    const index = words.findIndex(w => w.label === word);
-    if (index >= 0) words.splice(index, 1);
-    fs.writeFileSync(filename, JSON.stringify(words));
+    const dataset = VocaburaryDataset.fromBuffer(data);
+    const label = options["delete"]!;
+    dataset.remove(label);
+    fs.writeFileSync(filename, dataset.toJSON());
   })
 };
 
@@ -77,15 +99,21 @@ const quizView = () => {
     if (err) {
       initializeDatabase();
     }
-    const words = optimisticParse(data);
-    const promises = words.map(word =>
-      () => q("Do you know the word \"" + word.label + "\"?[y/n]: ")
+    const dataset = VocaburaryDataset.fromBuffer(data);
+    const promises = dataset.dataset.map(word =>
+      () => 
+        [word, q("Do you know the word \"" + word.label + "\"?[y/n]: ")] as [IVocabularyData, Promise<string>]
     );
     (async () => {
       for (let p of promises) {
-        let answer = await p();
-        if (answer === "" || answer === "y" || answer === "n") {
-          // TODO: save the status
+        const [word, _p] = p();
+        const answer = await _p;
+        if (answer === "" || answer === "y") {
+          word.numCorrectAnswers += 1;
+          fs.writeFileSync(filename, dataset.toJSON());
+        } else if (answer === "n") {
+          word.numIncorrectAnswers += 1;
+          fs.writeFileSync(filename, dataset.toJSON());
         } else {
           console.error("[ERROR] Invalid input. Skipping...");
         }
