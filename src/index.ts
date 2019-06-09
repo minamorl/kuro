@@ -77,8 +77,9 @@ class VocaburaryDataset {
     if (compareFn) {
       this.dataset.sort(compareFn);
     }
-    const picked = this.dataset.slice(0, n);
-    return picked.filter(d => d.numCorrectAnswers + d.numIncorrectAnswers < MAXIMUM_FREQUENCY);
+    return this.dataset
+      .filter(d => d.numCorrectAnswers + d.numIncorrectAnswers < MAXIMUM_FREQUENCY)
+      .slice(0, n);
   }
   insertOrUpdate(w: IVocabularyData) {
     const index = this.dataset.findIndex(x => x.label === w.label);
