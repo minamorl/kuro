@@ -101,16 +101,18 @@ class VocaburaryDataset {
   }
 }
 
-const readDictionary = (label: string) => {
+const readDictionary =  (label: string) => {
   const rs = fs.createReadStream('./db/ejdic-hand-utf8.txt');
   const rl = readline.createInterface(rs);
-
-  rl.on('line', function(line) {
-    const [word, definition] = line.split("\t");
-    if (word === label) {
-      console.log(word);
-      console.log(definition);
-    }
+  return () => new Promise(resolve => {
+    rl.on('line', function(line) {
+      const [word, definition] = line.split("\t");
+      if (word === label) {
+        console.log(word);
+        console.log(definition);
+        resolve()
+      }
+    });
   });
 };
 
@@ -169,7 +171,7 @@ const quizView = () => {
         }
       }
       for (let w of incorrectAnswers) {
-        readDictionary(w.label);
+        await readDictionary(w.label)();
       }
 
     })();
