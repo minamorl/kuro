@@ -41,7 +41,7 @@ const initializeDatabase = () => fs.writeFileSync(filename, JSON.stringify([]));
 const optimisticParse = (data?: Buffer) =>
   data? JSON.parse(data.toString()) as IVocabularyData[] : [];
 
-const MAXIMUM_FREQUENCY = 50;
+const MAXIMUM_FREQUENCY = 10;
 
 type CompareFunction = (a: IVocabularyData, b: IVocabularyData) => number;
 const defaultCompareFn: CompareFunction = (a, b) => {
@@ -78,7 +78,7 @@ class VocaburaryDataset {
       this.dataset.sort(compareFn);
     }
     return this.dataset
-      .filter(d => d.numCorrectAnswers + d.numIncorrectAnswers < MAXIMUM_FREQUENCY)
+      .filter(d => d.numCorrectAnswers < MAXIMUM_FREQUENCY)
       .slice(0, n);
   }
   insertOrUpdate(w: IVocabularyData) {
