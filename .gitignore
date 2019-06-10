@@ -91,3 +91,4 @@ typings/
 dist/
 data.json
 dataset/
+db/
