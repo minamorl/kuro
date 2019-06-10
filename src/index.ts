@@ -108,7 +108,7 @@ const readDictionary =  (label: string) => {
     rl.on('line', function(line) {
       const [word, definition] = line.split("\t");
       if (word === label) {
-        console.log(word);
+        console.log('\u001b[33m' + word + '\u001b[0m');
         console.log(definition);
         resolve()
       }
@@ -167,7 +167,7 @@ const quizView = () => {
           incorrectAnswers.push(word);
           fs.writeFileSync(filename, dataset.toJSON());
         } else {
-          console.error("[ERROR] Invalid input. Skipping...");
+          console.error('\u001b[31m' + "[ERROR] Invalid input. Skipping..." + '\u001b[0m');
         }
       }
       for (let w of incorrectAnswers) {
