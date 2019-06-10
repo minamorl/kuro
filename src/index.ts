@@ -101,6 +101,19 @@ class VocaburaryDataset {
   }
 }
 
+const readDictionary = (label: string) => {
+  const rs = fs.createReadStream('./db/ejdic-hand-utf8.txt');
+  const rl = readline.createInterface(rs);
+
+  rl.on('line', function(line) {
+    const [word, definition] = line.split("\t");
+    if (word === label) {
+      console.log(word);
+      console.log(definition);
+    }
+  });
+};
+
 const registerView = (options: IOptions) => {
   fs.readFile(filename, (err, data) => {
     if (err) {
@@ -140,6 +153,7 @@ const quizView = () => {
         [word, q("Do you know the word \"" + word.label + "\"?[y/n]: ")] as [IVocabularyData, Promise<string>]
     );
     (async () => {
+      const incorrectAnswers: IVocabularyData[] = [];
       for (let p of promises) {
         const [word, _p] = p();
         const answer = await _p;
@@ -148,11 +162,16 @@ const quizView = () => {
           fs.writeFileSync(filename, dataset.toJSON());
         } else if (answer === "n") {
           word.numIncorrectAnswers += 1;
+          incorrectAnswers.push(word);
           fs.writeFileSync(filename, dataset.toJSON());
         } else {
           console.error("[ERROR] Invalid input. Skipping...");
         }
       }
+      for (let w of incorrectAnswers) {
+        readDictionary(w.label);
+      }
+
     })();
   });
 };
