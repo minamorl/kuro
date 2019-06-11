@@ -42,7 +42,15 @@ const q = (msg: string) => new Promise<string>(resolve => {
 const initializeDatabase = () => fs.writeFileSync(filename, JSON.stringify([]));
 const optimisticParse = (data?: Buffer) =>
   data? JSON.parse(data.toString()) as IVocabularyData[] : [];
-
+const randomize = <T>(arr: Array<T>) => {
+  for(let i = arr.length - 1; i > 0; i--){
+    const r = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[r];
+    arr[r] = tmp;
+  }
+  return arr;
+};
 const MAXIMUM_FREQUENCY = 10;
 
 type CompareFunction = (a: IVocabularyData, b: IVocabularyData) => number;
@@ -152,7 +160,7 @@ const quizView = () => {
       initializeDatabase();
     }
     const dataset = VocaburaryDataset.fromBuffer(data);
-    const promises = dataset.pick(10, defaultCompareFn).map(word =>
+    const promises = randomize(dataset.pick(10, defaultCompareFn)).map(word =>
       () => 
         [word, q("Do you know the word \"" + word.label + "\"?[Y/n]: ")] as [IVocabularyData, Promise<string>]
     );
