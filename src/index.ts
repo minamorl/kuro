@@ -6,13 +6,14 @@ const filename = "data.json";
 
 interface IOptionDefinition {
   name: string,
-  alias: string,
+  alias?: string,
   type: any
 };
 
 interface IOptions {
   register?: string;
   delete?: string;
+  dictionary: boolean;
 };
 
 interface IVocabularyData {
@@ -23,7 +24,8 @@ interface IVocabularyData {
 
 const optionDefinitions: IOptionDefinition[] = [
   { name: "register", alias: "r", type: String },
-  { name: "delete", alias: "d", type: String }
+  { name: "delete", alias: "d", type: String },
+  { name: "dict", type: Boolean }
 ];
 
 const q = (msg: string) => new Promise<string>(resolve => {
@@ -178,6 +180,21 @@ const quizView = () => {
   });
 };
 
+const dictionaryView = () => {
+  fs.readFile(filename, (err, data) => {
+    if (err) {
+      initializeDatabase();
+    }
+    const dataset = VocaburaryDataset.fromBuffer(data);
+    
+    (async () => {
+      for (let w of dataset.pick(10)) {
+        await readDictionary(w.label)();
+      }
+    })();
+  });
+};
+
 const main = () => {
   const options = commandLineArgs(optionDefinitions) as IOptions;
   if ('register' in options) {
@@ -185,6 +202,9 @@ const main = () => {
   }
   if ('delete' in options) {
     deleteView(options);
+  }
+  if ('dict' in options) {
+    dictionaryView();
   }
   if (Object.keys(options).length === 0) {
     quizView();
