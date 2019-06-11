@@ -188,7 +188,7 @@ const dictionaryView = () => {
     const dataset = VocaburaryDataset.fromBuffer(data);
     
     (async () => {
-      for (let w of dataset.pick(10)) {
+      for (let w of dataset.pick(10, defaultCompareFn)) {
         await readDictionary(w.label)();
       }
     })();
