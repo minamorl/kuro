@@ -154,7 +154,7 @@ const quizView = () => {
     const dataset = VocaburaryDataset.fromBuffer(data);
     const promises = dataset.pick(10, defaultCompareFn).map(word =>
       () => 
-        [word, q("Do you know the word \"" + word.label + "\"?[y/n]: ")] as [IVocabularyData, Promise<string>]
+        [word, q("Do you know the word \"" + word.label + "\"?[Y/n]: ")] as [IVocabularyData, Promise<string>]
     );
     (async () => {
       const incorrectAnswers: IVocabularyData[] = [];
