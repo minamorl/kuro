@@ -15,6 +15,7 @@ interface IOptions {
   register?: string;
   delete?: string;
   dictionary: boolean;
+  number?: number;
 };
 
 interface IVocabularyData {
@@ -26,7 +27,8 @@ interface IVocabularyData {
 const optionDefinitions: IOptionDefinition[] = [
   { name: "register", alias: "r", type: String },
   { name: "delete", alias: "d", type: String },
-  { name: "dict", type: Boolean }
+  { name: "dict", type: Boolean },
+  { name: "number", alias: "n", type: Number}
 ];
 
 const q = (msg: string) => new Promise<string>(resolve => {
@@ -149,13 +151,15 @@ const deleteView = (options: IOptions) => {
   })
 };
 
-const quizView = () => {
+const quizView = (options: IOptions) => {
   fs.readFile(filename, (err, data) => {
     if (err) {
       initializeDatabase();
     }
     const dataset = VocaburaryDataset.fromBuffer(data);
-    const promises = randomize(dataset.pick(10, defaultCompareFn)).map(word =>
+    const promises = randomize(
+      dataset.pick(options.number ? options.number : 10, defaultCompareFn)
+    ).map(word =>
       () => 
         [word, q("Do you know the word \"" + word.label + "\"?[Y/n]: ")] as [IVocabularyData, Promise<string>]
     );
@@ -180,13 +184,17 @@ const quizView = () => {
   });
 };
 
-const dictionaryView = () => {
+const dictionaryView = (options: IOptions) => {
   fs.readFile(filename, (err, data) => {
     if (err) {
       initializeDatabase();
     }
     const dataset = VocaburaryDataset.fromBuffer(data);
-    readDictionary(dataset.pick(10, defaultCompareFn).map(w => w.label));
+    readDictionary(
+      dataset
+        .pick(options.number ? options.number : 10, defaultCompareFn)
+        .map(w => w.label)
+    );
   });
 };
 
@@ -194,15 +202,12 @@ const main = () => {
   const options = commandLineArgs(optionDefinitions) as IOptions;
   if ('register' in options) {
     registerView(options);
-  }
-  if ('delete' in options) {
+  } else if ('delete' in options) {
     deleteView(options);
-  }
-  if ('dict' in options) {
-    dictionaryView();
-  }
-  if (Object.keys(options).length === 0) {
-    quizView();
+  } else if ('dict' in options) {
+    dictionaryView(options);
+  } else {
+    quizView(options);
   }
 };
 
