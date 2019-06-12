@@ -1,6 +1,7 @@
 import commandLineArgs from "command-line-args";
 import fs from "fs";
 import readline from "readline";
+import searchDictionary from "./dictionary";
 
 const filename = "data.json";
 
@@ -111,18 +112,12 @@ class VocaburaryDataset {
   }
 }
 
-const readDictionary =  (label: string) => {
-  const rs = fs.createReadStream('./db/ejdic-hand-utf8.txt');
-  const rl = readline.createInterface(rs);
-  return () => new Promise(resolve => {
-    rl.on('line', function(line) {
-      const [word, definition] = line.split("\t");
-      if (word === label) {
-        console.log('\u001b[33m' + word + '\u001b[0m');
-        console.log(definition);
-        resolve()
-      }
-    });
+const readDictionary =  (labels: string[]) => {
+  return Promise.all(searchDictionary(labels)).then(results => {
+    for (const [word, definition] of results) {
+      console.log('\u001b[33m' + word + '\u001b[0m');
+      console.log(definition);
+    }
   });
 };
 
@@ -180,10 +175,7 @@ const quizView = () => {
           console.error('\u001b[31m' + "[ERROR] Invalid input. Skipping..." + '\u001b[0m');
         }
       }
-      for (let w of incorrectAnswers) {
-        await readDictionary(w.label)();
-      }
-
+      readDictionary(incorrectAnswers.map(w => w.label));
     })();
   });
 };
@@ -194,12 +186,7 @@ const dictionaryView = () => {
       initializeDatabase();
     }
     const dataset = VocaburaryDataset.fromBuffer(data);
-    
-    (async () => {
-      for (let w of dataset.pick(10, defaultCompareFn)) {
-        await readDictionary(w.label)();
-      }
-    })();
+    readDictionary(dataset.pick(10, defaultCompareFn).map(w => w.label));
   });
 };
 
