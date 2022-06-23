@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "command-line-args": "^5.1.1",
-    "jsdom": "^15.1.1",
+    "jsdom": "^16.5.0",
     "request": "^2.88.0"
   }
 }
